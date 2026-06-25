@@ -1,0 +1,66 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="KeyboardLight.MainWindow"
+        Title="Keyboard Light" Width="440" Height="580"
+        Background="#1e1e2e">
+
+  <StackPanel Margin="24" Spacing="16">
+
+    <TextBlock Text="⌨ Keyboard Light" FontSize="22" FontWeight="Bold"
+               Foreground="#cdd6f4" HorizontalAlignment="Center"/>
+
+    <!-- Renk -->
+    <Border Background="#313244" CornerRadius="10" Padding="16">
+      <StackPanel Spacing="10">
+        <TextBlock Text="Renk (HEX)" Foreground="#a6adc8" FontSize="13"/>
+        <Grid ColumnDefinitions="*,12,48">
+          <TextBox x:Name="HexInput" Text="FF0000"
+                   Foreground="#cdd6f4" Background="#45475a"
+                   CornerRadius="6" Padding="10,8"/>
+          <Border Grid.Column="2" x:Name="ColorPreview" CornerRadius="6"
+                  Background="#FF0000" Width="48" Height="36"/>
+        </Grid>
+        <WrapPanel>
+          <Button Width="32" Height="32" Margin="0,0,6,6" Background="#FF0000" CornerRadius="6" Tag="FF0000" Click="OnPresetColor"/>
+          <Button Width="32" Height="32" Margin="0,0,6,6" Background="#00FF00" CornerRadius="6" Tag="00FF00" Click="OnPresetColor"/>
+          <Button Width="32" Height="32" Margin="0,0,6,6" Background="#0000FF" CornerRadius="6" Tag="0000FF" Click="OnPresetColor"/>
+          <Button Width="32" Height="32" Margin="0,0,6,6" Background="#FF00FF" CornerRadius="6" Tag="FF00FF" Click="OnPresetColor"/>
+          <Button Width="32" Height="32" Margin="0,0,6,6" Background="#00FFFF" CornerRadius="6" Tag="00FFFF" Click="OnPresetColor"/>
+          <Button Width="32" Height="32" Margin="0,0,6,6" Background="#FFFF00" CornerRadius="6" Tag="FFFF00" Click="OnPresetColor"/>
+          <Button Width="32" Height="32" Margin="0,0,6,6" Background="#FF6600" CornerRadius="6" Tag="FF6600" Click="OnPresetColor"/>
+          <Button Width="32" Height="32" Margin="0,0,6,6" Background="#FFFFFF" CornerRadius="6" Tag="FFFFFF" Click="OnPresetColor"/>
+        </WrapPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- Parlaklık -->
+    <Border Background="#313244" CornerRadius="10" Padding="16">
+      <StackPanel Spacing="8">
+        <TextBlock Text="Parlaklık" Foreground="#a6adc8" FontSize="13"/>
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <RadioButton x:Name="Brightness1" Content="1" IsChecked="True" Foreground="#cdd6f4"/>
+          <RadioButton x:Name="Brightness2" Content="2" Foreground="#cdd6f4"/>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- Efektler -->
+    <Border Background="#313244" CornerRadius="10" Padding="16">
+      <StackPanel Spacing="8">
+        <TextBlock Text="Efekt" Foreground="#a6adc8" FontSize="13"/>
+        <WrapPanel>
+          <Button Content="Static" Width="80" Margin="0,0,6,6" Click="OnStatic"/>
+          <Button Content="Breath" Width="80" Margin="0,0,6,6" Click="OnBreath"/>
+          <Button Content="Wave →" Width="80" Margin="0,0,6,6" Click="OnWaveRtl"/>
+          <Button Content="Wave ←" Width="80" Margin="0,0,6,6" Click="OnWaveLtr"/>
+          <Button Content="Hue"    Width="80" Margin="0,0,6,6" Click="OnHue"/>
+          <Button Content="Kapat"  Width="80" Margin="0,0,6,6" Background="#f38ba8" Click="OnOff"/>
+        </WrapPanel>
+      </StackPanel>
+    </Border>
+
+    <TextBlock x:Name="StatusText" Text="Hazır" Foreground="#a6e3a1"
+               HorizontalAlignment="Center" FontSize="13"/>
+
+  </StackPanel>
+</Window>
