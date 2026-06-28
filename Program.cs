@@ -15,7 +15,6 @@ class Program
             ApplySavedSettings();
             return;
         }
-
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
@@ -26,9 +25,7 @@ class Program
             var path = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 "keyboardlight.json");
-
             if (!File.Exists(path)) return;
-
             var s = JsonSerializer.Deserialize<Settings>(File.ReadAllText(path));
             if (s == null) return;
 
@@ -36,13 +33,28 @@ class Program
             if (!ctrl.Connect()) return;
 
             var hex = s.Hex.Length == 6 ? s.Hex : "FFFFFF";
-            var color = System.Drawing.ColorTranslator.FromHtml("#" + hex);
-            var c = ((byte)color.R, (byte)color.G, (byte)color.B);
+            byte r = Convert.ToByte(hex[0..2], 16);
+            byte g = Convert.ToByte(hex[2..4], 16);
+            byte b = Convert.ToByte(hex[4..6], 16);
+            var c = (r, g, b);
+
+            // 4 bölge renkleri
+            static (byte, byte, byte) ParseHex(string h)
+            {
+                if (h.Length != 6) h = "FFFFFF";
+                return (Convert.ToByte(h[0..2], 16),
+                        Convert.ToByte(h[2..4], 16),
+                        Convert.ToByte(h[4..6], 16));
+            }
+
+            var colors = s.ZoneMode
+                ? new[] { ParseHex(s.Zone1), ParseHex(s.Zone2), ParseHex(s.Zone3), ParseHex(s.Zone4) }
+                : new[] { c };
 
             switch (s.Effect)
             {
-                case "static":   ctrl.SendStatic(new[] { c }, s.Brightness); break;
-                case "breath":   ctrl.SendBreath(new[] { c }, brightness: s.Brightness); break;
+                case "static":   ctrl.SendStatic(colors, s.Brightness); break;
+                case "breath":   ctrl.SendBreath(colors, brightness: s.Brightness); break;
                 case "wave-rtl": ctrl.SendWave(rtl: true); break;
                 case "wave-ltr": ctrl.SendWave(rtl: false); break;
                 case "hue":      ctrl.SendHue(); break;

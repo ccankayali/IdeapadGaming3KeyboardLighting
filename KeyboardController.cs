@@ -13,6 +13,7 @@ public class KeyboardController : IDisposable
 
     private IntPtr _ctx  = IntPtr.Zero;
     private IntPtr _dev  = IntPtr.Zero;
+    private int _claimedInterface = -1;
 
     [DllImport("libusb-1.0", EntryPoint = "libusb_init")]
     private static extern int libusb_init(ref IntPtr ctx);
@@ -26,9 +27,6 @@ public class KeyboardController : IDisposable
     [DllImport("libusb-1.0", EntryPoint = "libusb_close")]
     private static extern void libusb_close(IntPtr dev);
 
-    [DllImport("libusb-1.0", EntryPoint = "libusb_detach_kernel_driver")]
-    private static extern int libusb_detach_kernel_driver(IntPtr dev, int iface);
-
     [DllImport("libusb-1.0", EntryPoint = "libusb_claim_interface")]
     private static extern int libusb_claim_interface(IntPtr dev, int iface);
 
@@ -41,19 +39,31 @@ public class KeyboardController : IDisposable
         ushort value, ushort index,
         byte[] data, ushort length, uint timeout);
 
+    [DllImport("libusb-1.0", EntryPoint = "libusb_interrupt_transfer")]
+    private static extern int libusb_interrupt_transfer(
+        IntPtr dev, byte endpoint,
+        byte[] data, int length,
+        ref int transferred, uint timeout);
+
     public bool Connect()
     {
-        if (libusb_init(ref _ctx) < 0) return false;
+        Console.WriteLine("Connect() başladı");
+        int initResult = libusb_init(ref _ctx);
+        Console.WriteLine($"libusb_init: {initResult}");
+        if (initResult < 0) return false;
+
         _dev = libusb_open_device_with_vid_pid(_ctx, VendorId, ProductId);
+        Console.WriteLine($"libusb_open: {_dev}");
         if (_dev == IntPtr.Zero) return false;
 
-        int detachResult = libusb_detach_kernel_driver(_dev, 1);
-        if (detachResult < 0 && detachResult != -6) return false;
+        foreach (var iface in new[] { 0, 1 })
+        {
+            int claim = libusb_claim_interface(_dev, iface);
+            Console.WriteLine($"claim interface {iface}: {claim}");
+            if (claim == 0) { _claimedInterface = iface; return true; }
+        }
 
-        int claimResult = libusb_claim_interface(_dev, 1);
-        if (claimResult < 0) return false;
-
-        return true;
+        return false;
     }
 
     public void SendStatic((byte R, byte G, byte B)[] colors, int brightness = 1)
@@ -103,13 +113,26 @@ public class KeyboardController : IDisposable
 
     private void Send(byte[] data)
     {
-        int r = libusb_control_transfer(_dev, 0x21, 0x09, 0x03CC, 0x01, data, (ushort)data.Length, 1000);
-        if (r < 0) throw new Exception($"USB transfer failed: {r}");
+        // Önce control transfer dene (HID Set_Report)
+        int r = libusb_control_transfer(_dev, 0x21, 0x09, 0x03CC, 0x00, data, (ushort)data.Length, 1000);
+        Console.WriteLine($"control_transfer: {r}");
+        if (r < 0)
+        {
+            // Olmadı, interrupt transfer dene
+            int transferred = 0;
+            r = libusb_interrupt_transfer(_dev, 0x00, data, data.Length, ref transferred, 1000);
+            Console.WriteLine($"interrupt_transfer: {r}, transferred: {transferred}");
+            if (r < 0) throw new Exception($"USB transfer failed: {r}");
+        }
     }
 
     public void Dispose()
     {
-        if (_dev != IntPtr.Zero) { libusb_release_interface(_dev, 1); libusb_close(_dev); }
+        if (_dev != IntPtr.Zero && _claimedInterface >= 0)
+        {
+            libusb_release_interface(_dev, _claimedInterface);
+            libusb_close(_dev);
+        }
         if (_ctx != IntPtr.Zero) libusb_exit(_ctx);
     }
 }
