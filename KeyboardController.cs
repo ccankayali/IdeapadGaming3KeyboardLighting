@@ -14,7 +14,6 @@ public class KeyboardController : IDisposable
     private IntPtr _ctx  = IntPtr.Zero;
     private IntPtr _dev  = IntPtr.Zero;
 
-    // libusb P/Invoke
     [DllImport("libusb-1.0", EntryPoint = "libusb_init")]
     private static extern int libusb_init(ref IntPtr ctx);
 
@@ -47,8 +46,13 @@ public class KeyboardController : IDisposable
         if (libusb_init(ref _ctx) < 0) return false;
         _dev = libusb_open_device_with_vid_pid(_ctx, VendorId, ProductId);
         if (_dev == IntPtr.Zero) return false;
-        libusb_detach_kernel_driver(_dev, 0);
-        libusb_claim_interface(_dev, 0);
+
+        int detachResult = libusb_detach_kernel_driver(_dev, 1);
+        if (detachResult < 0 && detachResult != -6) return false;
+
+        int claimResult = libusb_claim_interface(_dev, 1);
+        if (claimResult < 0) return false;
+
         return true;
     }
 
@@ -99,13 +103,13 @@ public class KeyboardController : IDisposable
 
     private void Send(byte[] data)
     {
-        int r = libusb_control_transfer(_dev, 0x21, 0x09, 0x03CC, 0x00, data, (ushort)data.Length, 1000);
+        int r = libusb_control_transfer(_dev, 0x21, 0x09, 0x03CC, 0x01, data, (ushort)data.Length, 1000);
         if (r < 0) throw new Exception($"USB transfer failed: {r}");
     }
 
     public void Dispose()
     {
-        if (_dev != IntPtr.Zero) { libusb_release_interface(_dev, 0); libusb_close(_dev); }
+        if (_dev != IntPtr.Zero) { libusb_release_interface(_dev, 1); libusb_close(_dev); }
         if (_ctx != IntPtr.Zero) libusb_exit(_ctx);
     }
 }
